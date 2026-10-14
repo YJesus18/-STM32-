@@ -1,0 +1,19 @@
+# Keil build outputs
+Objects/
+Listings/
+*.axf
+*.hex
+*.bin
+*.map
+*.lst
+*.crf
+*.d
+*.o
+
+# Keil user-specific workspace and debug configuration
+*.uvoptx
+*.uvguix.*
+
+# Local temporary files and generated previews
+tmp/
+
