@@ -6,11 +6,12 @@
 #include "OLED.h"
 #include "LightSensor.h"
 
-#define TRACK_BASE_SPEED       25 // 正常循迹基础PWM占空比
-#define TRACK_CROSS_SPEED      18 // 十字路口速度
-#define TRACK_SEARCH_SPEED     12 // 丢线搜索速度
-#define TRACK_LOST_STOP_COUNT  100 // 连续丢线约 100 次后停车（主循环周期约 5 ms）
+#define TRACK_BASE_SPEED       26 // 正常循迹基础PWM占空比
+#define TRACK_CROSS_SPEED      25 // 十字路口速度
+#define TRACK_SEARCH_SPEED     37 // 丢线搜索速度
+#define TRACK_LOST_STOP_COUNT  5000 // 连续丢线约 100 次后停车（主循环周期约 5 ms）
 #define TRACK_PWM_MULTIPLIER   1 // PWM倍数
+#define MOTOR_LEFT_OFFSET      2 // 新增：电机差速补偿（左轮基准偏移） /小车固定往左偏就加正值，固定往右偏就加负值*/
 
 static int16_t LastPosition = 0; // 上一次黑线的位置
 static uint16_t LostCount = 0; // 连续丢线次数
@@ -33,21 +34,25 @@ static int16_t LimitSpeed(int16_t speed)
 // 根据黑线位置计算纠偏值
 static int16_t GetTrackCorrection(int16_t position)
 {
-	if ((position >= -250) && (position <= 250))
+	if ((position > -160) && (position < 160))
 	{
 		return 0;
 	}
 
-	if (position < 0)
+if (position < 0)
 	{
-		if (position >= -1000) return -2;
-		if (position >= -2000) return -3;
-		return -4;
+		if (position > -700) return -2;
+		if (position > -2200) return -10;
+		if (position > -2800) return -16;
+		return -22;
 	}
-
-	if (position <= 1000) return 2;
-	if (position <= 2000) return 3;
-	return 4;
+  else
+	{
+		if (position < 700) return 2;
+		if (position < 2200) return 10;
+		if (position < 2800) return 16;
+	return 22;
+	}
 }
 
 // 把目标速度转换为实际的PWM输出
@@ -70,23 +75,25 @@ void Robot_Traction(void)
 	int16_t right_speed;
 
 	Irtracking_Read(&data);
+
+	correction = GetTrackCorrection(data.position); // 再算纠偏值
 	TrackBlackCount = data.black_count;
 
 	// Search using the last known line position when all sensors lose the line.
 	if (data.black_count == 0)
 	{
-		if (LostCount < TRACK_LOST_STOP_COUNT)
+ 		if (LostCount < TRACK_LOST_STOP_COUNT)
 		{
 			LostCount++;
 			if (LastPosition < 0)
 			{
 				// 黑线在左侧，向左寻找
-				Car_SetDifferentialSpeed(0, TRACK_SEARCH_SPEED);
+				Car_SetDifferentialSpeed(6, TRACK_SEARCH_SPEED);
 			}
 			else if (LastPosition > 0)
 			{
 				// 黑线在右侧，向右寻找
-				Car_SetDifferentialSpeed(TRACK_SEARCH_SPEED, 0);
+				Car_SetDifferentialSpeed(TRACK_SEARCH_SPEED, 6);
 			}
 			else
 			{
@@ -101,7 +108,8 @@ void Robot_Traction(void)
 	}
 
 	LostCount = 0;
-
+	data.position = (int16_t)(data.position * 0.6 + LastPosition * 0.4);
+	LastPosition = data.position; // 更新上一次位置，一定要写！
 	// 十字路口处理：当检测到 6 个或更多传感器检测到黑线时，认为是十字路口。
 	if (data.black_count >= 6)
 	{
@@ -156,6 +164,6 @@ int main(void)
 		}
 		*/
 		
-		Delay_ms(5);
+		Delay_ms(1);
 	}
 }
