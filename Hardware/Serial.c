@@ -1,10 +1,16 @@
 #include "stm32f10x.h"                  // Device header
+#include "Serial.h"
 #include <stdio.h>
 
 #include <stdarg.h>
 
-uint8_t Serial_RxData;
-uint8_t Serial_RxFlag;
+#define SERIAL_RX_BUFFER_SIZE 32U
+
+static volatile uint8_t Serial_RxBuffer[SERIAL_RX_BUFFER_SIZE];
+static volatile uint8_t Serial_RxHead;
+static volatile uint8_t Serial_RxTail;
+
+uint8_t Serial_ReadByte(uint8_t *data);
 
 void Serial_Init(void)
 {
@@ -12,20 +18,15 @@ void Serial_Init(void)
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA,ENABLE);
 
 	GPIO_InitTypeDef GPIO_InitStructure;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOA,&GPIO_InitStructure);
-	
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA,&GPIO_InitStructure);
 	
 	USART_InitTypeDef USART_InitStruture;
-	USART_InitStruture.USART_BaudRate = 9600;
+	USART_InitStruture.USART_BaudRate = 115200;
 	USART_InitStruture.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	USART_InitStruture.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
+	USART_InitStruture.USART_Mode = USART_Mode_Rx;
 	USART_InitStruture.USART_Parity = USART_Parity_No;
 	USART_InitStruture.USART_StopBits = USART_StopBits_1;
 	USART_InitStruture.USART_WordLength = USART_WordLength_8b;
@@ -40,6 +41,8 @@ void Serial_Init(void)
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
 	NVIC_Init(&NVIC_InitStructure);
 	
+	Serial_RxHead = 0U;
+	Serial_RxTail = 0U;
 	USART_Cmd(USART1,ENABLE);
 }
 
@@ -107,25 +110,41 @@ void Serial_Printf(char *format, ...)
 
 uint8_t Serial_GetRxFlag(void)
 {
-	if(Serial_RxFlag == 1)
-	{
-		Serial_RxFlag = 0;
-		return 1;
-	}
-	return 0;
+	return (Serial_RxHead != Serial_RxTail) ? 1U : 0U;
 }
 
 uint8_t Serial_GetRxData(void)
 {
-	return Serial_RxData;
+	uint8_t data = 0U;
+	(void)Serial_ReadByte(&data);
+	return data;
+}
+
+uint8_t Serial_ReadByte(uint8_t *data)
+{
+	if ((data == 0) || (Serial_RxHead == Serial_RxTail))
+	{
+		return 0U;
+	}
+
+	*data = Serial_RxBuffer[Serial_RxTail];
+	Serial_RxTail = (uint8_t)((Serial_RxTail + 1U) % SERIAL_RX_BUFFER_SIZE);
+	return 1U;
 }
 
 void USART1_IRQHandler(void)
 {
-	if(USART_GetFlagStatus(USART1,USART_IT_RXNE) == SET)
+	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
 	{
-		Serial_RxData = USART_ReceiveData(USART1);
-		Serial_RxFlag = 1;
-		USART_ClearITPendingBit(USART1,USART_IT_RXNE);
+		uint8_t data;
+		uint8_t next;
+
+		data = (uint8_t)USART_ReceiveData(USART1);
+		next = (uint8_t)((Serial_RxHead + 1U) % SERIAL_RX_BUFFER_SIZE);
+		if (next != Serial_RxTail)
+		{
+			Serial_RxBuffer[Serial_RxHead] = data;
+			Serial_RxHead = next;
+		}
 	}
 }
