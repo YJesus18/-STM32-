@@ -4,7 +4,7 @@
 #include "robot.h"
 
 #define TB6612_STBY_PIN GPIO_Pin_6
-#define TB6612_AIN1_PIN GPIO_Pin_10
+#define TB6612_AIN1_PIN GPIO_Pin_0
 #define TB6612_AIN2_PIN GPIO_Pin_9
 #define TB6612_BIN1_PIN GPIO_Pin_11
 #define TB6612_BIN2_PIN GPIO_Pin_12
@@ -19,17 +19,16 @@ void robot_Init(void)
 	GPIO_InitTypeDef gpio;
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB, ENABLE);
-	GPIO_ResetBits(GPIOA, TB6612_AIN1_PIN | TB6612_AIN2_PIN |
-		TB6612_BIN1_PIN | TB6612_BIN2_PIN);
-	GPIO_ResetBits(GPIOB, TB6612_STBY_PIN);
+	GPIO_ResetBits(GPIOA, TB6612_AIN2_PIN | TB6612_BIN1_PIN |
+		TB6612_BIN2_PIN);
+	GPIO_ResetBits(GPIOB, TB6612_STBY_PIN | TB6612_AIN1_PIN);
 
-	gpio.GPIO_Pin = TB6612_AIN1_PIN | TB6612_AIN2_PIN | TB6612_BIN1_PIN |
-		TB6612_BIN2_PIN;
+	gpio.GPIO_Pin = TB6612_AIN2_PIN | TB6612_BIN1_PIN | TB6612_BIN2_PIN;
 	gpio.GPIO_Mode = GPIO_Mode_Out_PP;
 	gpio.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA, &gpio);
 
-	gpio.GPIO_Pin = TB6612_STBY_PIN;
+	gpio.GPIO_Pin = TB6612_STBY_PIN | TB6612_AIN1_PIN;
 	GPIO_Init(GPIOB, &gpio);
 
 	/* Reverse both motor directions: AIN2/BIN2 high, AIN1/BIN1 low. */

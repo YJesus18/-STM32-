@@ -1,17 +1,18 @@
 #include "Tunnel.h"
 #include "AppConfig.h"
 #include "Encoder.h"
-#include "LightSensor.h"
+#include "Ultrasonic.h"
 
 static uint16_t TunnelCount;
 static uint8_t TunnelInside;
-static uint8_t TunnelCandidateDark;
+static uint8_t TunnelCandidateInside;
 static uint8_t TunnelDebounceCount;
-static uint16_t TunnelSampleElapsedMs;
 static int32_t TunnelStartLeft;
 static int32_t TunnelStartRight;
 static uint32_t TunnelLengthPulses;
 static uint32_t TunnelLengthCm;
+static uint16_t TunnelDistanceCm;
+static uint8_t TunnelDistanceValid;
 static uint8_t TunnelEnteredEvent;
 static uint8_t TunnelResultEvent;
 
@@ -31,33 +32,52 @@ static void Tunnel_UpdateLength(int32_t left_count, int32_t right_count)
 		ENCODER_COUNTS_PER_100CM / 2UL) / ENCODER_COUNTS_PER_100CM;
 }
 
-static void Tunnel_Sample(void)
+static void Tunnel_ProcessUltrasonic(void)
 {
-	uint8_t dark;
+	uint8_t detected_inside;
+	uint8_t distance_valid;
+	uint16_t distance_cm;
 	int32_t left_count;
 	int32_t right_count;
 
-	dark = (LightSensor_ReadDO() == TUNNEL_DARK_DO_LEVEL) ? 1U : 0U;
+	distance_valid = Ultrasonic_IsValid();
+	distance_cm = Ultrasonic_GetDistanceCm();
+	TunnelDistanceValid = distance_valid;
+	if (distance_valid != 0U)
+	{
+		TunnelDistanceCm = distance_cm;
+	}
 	left_count = Encoder_GetLeftCount();
 	right_count = Encoder_GetRightCount();
 
 	if (TunnelInside != 0U)
 	{
+		detected_inside = ((distance_valid != 0U) &&
+			(distance_cm < TUNNEL_EXIT_DISTANCE_CM)) ? 1U : 0U;
+	}
+	else
+	{
+		detected_inside = ((distance_valid != 0U) &&
+			(distance_cm <= TUNNEL_ENTER_DISTANCE_CM)) ? 1U : 0U;
+	}
+
+	if (TunnelInside != 0U)
+	{
 		Tunnel_UpdateLength(left_count, right_count);
 	}
-	if (dark != TunnelCandidateDark)
+	if (detected_inside != TunnelCandidateInside)
 	{
-		TunnelCandidateDark = dark;
+		TunnelCandidateInside = detected_inside;
 		TunnelDebounceCount = 1U;
 		return;
 	}
-	if (TunnelDebounceCount < TUNNEL_DEBOUNCE_SAMPLES)
+	if (TunnelDebounceCount < TUNNEL_CONFIRM_SAMPLES)
 	{
 		TunnelDebounceCount++;
-		return;
 	}
+	if (TunnelDebounceCount < TUNNEL_CONFIRM_SAMPLES) return;
 
-	if ((dark != 0U) && (TunnelInside == 0U))
+	if ((detected_inside != 0U) && (TunnelInside == 0U))
 	{
 		TunnelInside = 1U;
 		TunnelStartLeft = left_count;
@@ -66,7 +86,7 @@ static void Tunnel_Sample(void)
 		TunnelLengthCm = 0U;
 		TunnelEnteredEvent = 1U;
 	}
-	else if ((dark == 0U) && (TunnelInside != 0U))
+	else if ((detected_inside == 0U) && (TunnelInside != 0U))
 	{
 		Tunnel_UpdateLength(left_count, right_count);
 		TunnelInside = 0U;
@@ -79,26 +99,27 @@ void Tunnel_Init(void)
 {
 	TunnelCount = 0U;
 	TunnelInside = 0U;
-	TunnelCandidateDark = 0U;
+	TunnelCandidateInside = 0U;
 	TunnelDebounceCount = 0U;
-	TunnelSampleElapsedMs = 0U;
 	TunnelStartLeft = 0;
 	TunnelStartRight = 0;
 	TunnelLengthPulses = 0U;
 	TunnelLengthCm = 0U;
+	TunnelDistanceCm = 0U;
+	TunnelDistanceValid = 0U;
 	TunnelEnteredEvent = 0U;
 	TunnelResultEvent = 0U;
 	Encoder_Init();
-	LightSensor_Init();
+	Ultrasonic_Init();
 }
 
 void Tunnel_Update(void)
 {
-	TunnelSampleElapsedMs++;
-	if (TunnelSampleElapsedMs >= TUNNEL_SAMPLE_PERIOD_MS)
+	Ultrasonic_Update();
+
+	if (Ultrasonic_HasNewMeasurement() != 0U)
 	{
-		TunnelSampleElapsedMs = 0U;
-		Tunnel_Sample();
+		Tunnel_ProcessUltrasonic();
 	}
 }
 
@@ -134,4 +155,14 @@ uint32_t Tunnel_GetLengthCm(void)
 uint32_t Tunnel_GetLengthPulses(void)
 {
 	return TunnelLengthPulses;
+}
+
+uint16_t Tunnel_GetDistanceCm(void)
+{
+	return TunnelDistanceCm;
+}
+
+uint8_t Tunnel_IsDistanceValid(void)
+{
+	return TunnelDistanceValid;
 }

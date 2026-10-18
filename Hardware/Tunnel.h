@@ -11,5 +11,7 @@ uint8_t Tunnel_HasNewResult(void);
 uint16_t Tunnel_GetCount(void);
 uint32_t Tunnel_GetLengthCm(void);
 uint32_t Tunnel_GetLengthPulses(void);
+uint16_t Tunnel_GetDistanceCm(void);
+uint8_t Tunnel_IsDistanceValid(void);
 
 #endif

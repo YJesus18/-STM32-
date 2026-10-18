@@ -765,6 +765,16 @@
               <FilePath>.\Hardware\LightSensor.h</FilePath>
             </File>
             <File>
+              <FileName>Ultrasonic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\Ultrasonic.c</FilePath>
+            </File>
+            <File>
+              <FileName>Ultrasonic.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\Ultrasonic.h</FilePath>
+            </File>
+            <File>
               <FileName>TrackControl.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Hardware\TrackControl.c</FilePath>
@@ -793,6 +803,16 @@
               <FileName>AppDisplay.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\Hardware\AppDisplay.h</FilePath>
+            </File>
+            <File>
+              <FileName>VisionControl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\VisionControl.c</FilePath>
+            </File>
+            <File>
+              <FileName>VisionControl.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\VisionControl.h</FilePath>
             </File>
           </Files>
         </Group>

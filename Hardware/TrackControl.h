@@ -5,6 +5,7 @@
 
 void TrackControl_Init(void);
 void TrackControl_Update(void);
+void TrackControl_Stop(void);
 uint8_t TrackControl_GetBlackCount(void);
 
 #endif

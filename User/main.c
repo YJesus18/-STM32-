@@ -3,6 +3,7 @@
 #include "TrackControl.h"
 #include "Tunnel.h"
 #include "AppDisplay.h"
+#include "VisionControl.h"
 
 int main(void)
 {
@@ -10,11 +11,27 @@ int main(void)
 	TrackControl_Init();
 	Tunnel_Init();
 	AppDisplay_Init();
+	VisionControl_Init();
 
 	while (1)
 	{
+		VisionControl_Update();
+		if (VisionControl_HasRedStopRequest() != 0U)
+		{
+			TrackControl_Stop();
+			AppDisplay_ShowStop();
+		}
+
 		TrackControl_Update();
 		Tunnel_Update();
+		AppDisplay_UpdateDistance(
+			Tunnel_GetDistanceCm(),
+			Tunnel_IsDistanceValid());
+
+		if (VisionControl_HasNewBlueCount() != 0U)
+		{
+			AppDisplay_ShowBlueCount(VisionControl_GetBlueCount());
+		}
 
 		if (Tunnel_HasEntered() != 0U)
 		{
@@ -25,10 +42,9 @@ int main(void)
 		{
 			AppDisplay_ShowTunnelResult(
 				Tunnel_GetCount(),
-				Tunnel_GetLengthCm(),
-				Tunnel_GetLengthPulses());
+				Tunnel_GetLengthCm());
 		}
 
-		Delay_ms(1);
+		Delay_ms(5);
 	}
 }

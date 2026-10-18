@@ -6,6 +6,7 @@
 static int16_t LastPosition;
 static uint16_t LostCount;
 static uint8_t TrackBlackCount;
+static uint8_t TrackStopped;
 
 static int16_t LimitSpeed(int16_t speed)
 {
@@ -24,16 +25,16 @@ static int16_t GetTrackCorrection(int16_t position)
 
 	if (position < 0)
 	{
-		if (position > -700) return -2;
-		if (position > -2200) return -10;
-		if (position > -2800) return -16;
-		return -22;
+		if (position > -700) return -10;
+		if (position > -2200) return -15;
+		if (position > -2800) return -25;
+		return -10;
 	}
 
-	if (position < 700) return 2;
-	if (position < 2200) return 10;
-	if (position < 2800) return 16;
-	return 22;
+	if (position < 700) return 10;
+	if (position < 2200) return 15;
+	if (position < 2800) return 25;
+	return 10;
 }
 
 static void Car_SetDifferentialSpeed(int16_t left_speed, int16_t right_speed)
@@ -51,6 +52,7 @@ void TrackControl_Init(void)
 	LastPosition = 0;
 	LostCount = 0U;
 	TrackBlackCount = 0U;
+	TrackStopped = 0U;
 	Irtracking_Init();
 	robot_Init();
 }
@@ -62,6 +64,12 @@ void TrackControl_Update(void)
 	int16_t correction;
 	int16_t left_speed;
 	int16_t right_speed;
+
+	if (TrackStopped != 0U)
+	{
+		robot_speed(0U, 0U);
+		return;
+	}
 
 	Irtracking_Read(&data);
 	TrackBlackCount = data.black_count;
@@ -113,4 +121,10 @@ void TrackControl_Update(void)
 uint8_t TrackControl_GetBlackCount(void)
 {
 	return TrackBlackCount;
+}
+
+void TrackControl_Stop(void)
+{
+	TrackStopped = 1U;
+	robot_speed(0U, 0U);
 }
