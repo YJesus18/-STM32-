@@ -1,11 +1,13 @@
 #ifndef __APP_CONFIG_H
 #define __APP_CONFIG_H
 
+/* Differential PWM correction used by the two center tracking sensors. */
+#define TRACK_TWO_SENSOR_CORRECTION 8
+
 /* 循迹速度参数。 */
-#define TRACK_BASE_SPEED       36 // 小车基础运行速度
-#define TRACK_CROSS_SPEED      30 // 小车交叉运行速度
-#define TRACK_SEARCH_SPEED     50 // 小车搜索运行速度
-#define TRACK_LOST_STOP_COUNT  3000U // 小车丢失信号停止计数
+#define TRACK_BASE_SPEED       18 // 小车基础运行速度
+#define TRACK_SEARCH_SPEED     15 // 小车搜索运行速度
+#define TRACK_LOST_STOP_COUNT  3500U // 小车丢失信号停止计数
 #define TRACK_PWM_MULTIPLIER   1 // 小车PWM倍数
 
 /* 隧道检测与编码器长度标定参数。 */
