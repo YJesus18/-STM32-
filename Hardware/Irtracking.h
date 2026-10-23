@@ -3,11 +3,11 @@
 
 #include "stm32f10x.h"
 
-#define IRTRACKING_SENSOR_COUNT  2
+#define IRTRACKING_SENSOR_COUNT  4
 
 /*
- * Only the two center sensors are used:
- * left center (S4/L4) -> PA4, right center (S5/L5) -> PA3.
+ * Four center sensors are used from left to right:
+ * S3/L3 -> PA5, S4/L4 -> PA4, S5/L5 -> PA3, S6/L6 -> PA2.
  * This module is configured for low-level output on a black line.
  */
 #define IRTRACKING_BLACK_IS_HIGH  0
@@ -17,7 +17,7 @@ typedef struct
 {
 	uint8_t pattern; // 传感器状态位图，低位对应右边传感器，高位对应左边传感器
 	uint8_t black_count; // 检测到黑线的传感器数量
-	int16_t position; // 黑线位置，范围[-7, 7]，左边为负，右边为正
+	int16_t position; // 黑线加权位置，范围[-1500, 1500]，左边为负，右边为正
 } Irtracking_Data;
 
 void Irtracking_Init(void);

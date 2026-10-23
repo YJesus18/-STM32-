@@ -14,34 +14,12 @@ static int16_t LimitSpeed(int16_t speed)
 	if (speed < 0) return 0;
 	return speed;
 }
-
-
-/* 使用原来的分段纠偏逻辑，不使用PID。 */
-/*static int16_t GetTrackCorrection(int16_t position)
-{
-	if ((position > -160) && (position < 160))
-	{
-		return 0;
-	}
-
-	if (position < 0)
-	{
-		if (position > -700) return -9;
-		if (position > -2200) return -12;
-		if (position > -2800) return -18;
-		return -5;
-	}
-
-	if (position < 700) return 9;
-	if (position < 2200) return 12;
-	if (position < 2800) return 18;
-	return 5;
-}*/
-
 static int16_t GetTrackCorrection(int16_t position)
 {
-	if (position < 0) return -TRACK_TWO_SENSOR_CORRECTION;
-	if (position > 0) return TRACK_TWO_SENSOR_CORRECTION;
+	if (position <= -1000) return -TRACK_OUTER_CORRECTION;
+	if (position < 0) return -TRACK_INNER_CORRECTION;
+	if (position >= 1000) return TRACK_OUTER_CORRECTION;
+	if (position > 0) return TRACK_INNER_CORRECTION;
 	return 0;
 }
 
@@ -108,7 +86,10 @@ void TrackControl_Update(void)
 	}
 
 	LostCount = 0U;
-	LastPosition = data.position;
+	if (data.position != 0)
+	{
+		LastPosition = data.position;
+	}
 	correction = GetTrackCorrection(data.position);
 	left_speed = TRACK_BASE_SPEED + correction;
 	right_speed = TRACK_BASE_SPEED - correction;
