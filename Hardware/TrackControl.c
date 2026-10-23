@@ -15,8 +15,9 @@ static int16_t LimitSpeed(int16_t speed)
 	return speed;
 }
 
+
 /* 使用原来的分段纠偏逻辑，不使用PID。 */
-static int16_t GetTrackCorrection(int16_t position)
+/*static int16_t GetTrackCorrection(int16_t position)
 {
 	if ((position > -160) && (position < 160))
 	{
@@ -25,16 +26,23 @@ static int16_t GetTrackCorrection(int16_t position)
 
 	if (position < 0)
 	{
-		if (position > -700) return -10;
-		if (position > -2200) return -15;
-		if (position > -2800) return -25;
-		return -10;
+		if (position > -700) return -9;
+		if (position > -2200) return -12;
+		if (position > -2800) return -18;
+		return -5;
 	}
 
-	if (position < 700) return 10;
-	if (position < 2200) return 15;
-	if (position < 2800) return 25;
-	return 10;
+	if (position < 700) return 9;
+	if (position < 2200) return 12;
+	if (position < 2800) return 18;
+	return 5;
+}*/
+
+static int16_t GetTrackCorrection(int16_t position)
+{
+	if (position < 0) return -TRACK_TWO_SENSOR_CORRECTION;
+	if (position > 0) return TRACK_TWO_SENSOR_CORRECTION;
+	return 0;
 }
 
 static void Car_SetDifferentialSpeed(int16_t left_speed, int16_t right_speed)
@@ -81,15 +89,15 @@ void TrackControl_Update(void)
 			LostCount++;
 			if (LastPosition < 0)
 			{
-				Car_SetDifferentialSpeed(6, TRACK_SEARCH_SPEED);
+				Car_SetDifferentialSpeed(0, TRACK_SEARCH_SPEED);
 			}
 			else if (LastPosition > 0)
 			{
-				Car_SetDifferentialSpeed(TRACK_SEARCH_SPEED, 6);
+				Car_SetDifferentialSpeed(TRACK_SEARCH_SPEED, 0);
 			}
 			else
 			{
-				Car_SetDifferentialSpeed(TRACK_CROSS_SPEED, TRACK_CROSS_SPEED);
+				Car_SetDifferentialSpeed(TRACK_BASE_SPEED, TRACK_BASE_SPEED);
 			}
 		}
 		else
@@ -100,21 +108,10 @@ void TrackControl_Update(void)
 	}
 
 	LostCount = 0U;
-	data.position = (int16_t)(((int32_t)data.position * 3 +
-		(int32_t)LastPosition * 2) / 5);
 	LastPosition = data.position;
 	correction = GetTrackCorrection(data.position);
-
-	if (data.black_count >= 6U)
-	{
-		left_speed = TRACK_CROSS_SPEED + correction;
-		right_speed = TRACK_CROSS_SPEED - correction;
-	}
-	else
-	{
-		left_speed = TRACK_BASE_SPEED + correction;
-		right_speed = TRACK_BASE_SPEED - correction;
-	}
+	left_speed = TRACK_BASE_SPEED + correction;
+	right_speed = TRACK_BASE_SPEED - correction;
 	Car_SetDifferentialSpeed(left_speed, right_speed);
 }
 

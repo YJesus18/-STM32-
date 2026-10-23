@@ -3,11 +3,11 @@
 
 #include "stm32f10x.h"
 
-#define IRTRACKING_SENSOR_COUNT  8
+#define IRTRACKING_SENSOR_COUNT  2
 
 /*
- * S1 is the leftmost sensor and S8 is the rightmost sensor.
- * Wiring: S8->PA0, S7->PA1, ..., S1->PA7.
+ * Only the two center sensors are used:
+ * left center (S4/L4) -> PA4, right center (S5/L5) -> PA3.
  * This module is configured for low-level output on a black line.
  */
 #define IRTRACKING_BLACK_IS_HIGH  0
